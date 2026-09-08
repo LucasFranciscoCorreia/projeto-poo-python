@@ -57,15 +57,22 @@ class Bandeja:
         return self.quantidade
 
 class RoboColetor(Robo):
-    def __init__(self, **kwargs):
+    def __init__(self, observadores = None, **kwargs):
         super().__init__(**kwargs)
+        if observadores is not None:
+            for observador in observadores:
+                self.adicionar_observador(observador)
         self.bandeja = Bandeja()
 
     def coletar(self, item):
         self.bandeja.adicionar(item)
+        for observador in self.observadores:
+            observador.notificar("coleta", self)
 
     def remover(self, item):
         self.bandeja.remover(item)
+        for observador in self.observadores:
+            observador.notificar("remocao", self)
 
     def __len__(self):
         return len(self.bandeja)
