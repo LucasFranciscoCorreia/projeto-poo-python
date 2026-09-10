@@ -12,9 +12,10 @@ from src.celular_robo.modos_base import ModoOperacao
 
 class ModoColetando(ModoOperacao):
     def mover(self, robo):
-        ...
+        return robo.estrategia.mover(robo)
 
 class ModoAguardandoVerificacao(ModoOperacao):
     def mover(self, robo):
-        ...
+        print(f"{robo.nome} está aguardando verificação da equipe de testes. Movimentação bloqueada.")
+        return False
     

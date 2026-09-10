@@ -29,6 +29,8 @@ class QuantidadeValida:
         return instance.__dict__[self.nome]
 
     def __set__(self, instance, valor):
+        if not isinstance(valor, int):
+            raise ValueError(f"{valor=} deve ser um inteiro")
         if not (0 <= valor <= self.maximo):
             raise ValueError(
                 f"{self.nome_publico} não pode possuir valor negativo nem sair da quantidade máxima da bandeja"
@@ -66,13 +68,14 @@ class RoboColetor(Robo):
 
     def coletar(self, item):
         self.bandeja.adicionar(item)
-        for observador in self.observadores:
-            observador.notificar("coleta", self)
+        self.notificar("coleta", item)
 
     def remover(self, item):
         self.bandeja.remover(item)
-        for observador in self.observadores:
-            observador.notificar("remocao", self)
+        self.notificar("remocao", item)
 
     def __len__(self):
         return len(self.bandeja)
+
+    def __repr__(self):
+        return f"RoboColetor({super().__repr__()})"
