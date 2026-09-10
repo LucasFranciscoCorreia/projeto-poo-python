@@ -12,14 +12,18 @@ from celular_robo.comandos_base import Comando
 
 
 class ComandoColeta(Comando):
-    def __init__(self, codinome, posicao, quantidade):
+    def __init__(self, codinome, posicao, quantidade, fragil=False, urgente=False):
         super().__init__()
         self.codinome = codinome
-        self.posicao = posicao
+        self.posicao = tuple(posicao)
         self.quantidade = quantidade
+        self.fragil = fragil
+        self.urgente = urgente
 
     def executar(self, robo):
-        pass
+        robo.estrategia.mover(robo, destino=self.posicao)
+        robo.estrategia.coletar(robo, self.codinome, self.quantidade)
 
     def desfazer(self, robo):
-        pass
+        for _ in range(self.quantidade):
+            robo.remover(self.codinome)

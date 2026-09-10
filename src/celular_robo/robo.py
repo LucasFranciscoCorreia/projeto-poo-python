@@ -13,12 +13,9 @@
 #   negativa nem passa do pedido.
 # - __str__/__repr__ (robô) e __len__ (bandeja — quantos itens já coletados).
 
-from src.celular_robo.robo_base import Robo
+from celular_robo.robo_base import Robo
 
 class QuantidadeValida:
-    def __init__(self, maximo):
-        self.maximo = maximo
-
     def __set_name__(self, owner, name):
         self.nome_publico = name
         self.nome = "_" + name
@@ -26,41 +23,54 @@ class QuantidadeValida:
     def __get__(self, instance, owner):
         if instance is None:
             return self
-        return instance.__dict__[self.nome]
+        return instance.__dict__.setdefault(self.nome, {})
 
     def __set__(self, instance, valor):
-        if not isinstance(valor, int):
-            raise ValueError(f"{valor=} deve ser um inteiro")
-        if not (0 <= valor <= self.maximo):
-            raise ValueError(
-                f"{self.nome_publico} não pode possuir valor negativo nem sair da quantidade máxima da bandeja"
-                f"(0 a {self.maximo})"
-            )
-        instance.__dict__[self.nome] = valor
+        if not isinstance(valor, dict):
+            raise ValueError(f"{self.nome_publico} deve ser um dicionário, recebi {type(valor).__name__}")
+        
+        for item, quantidade in valor.items():
+            if not isinstance(quantidade, int):
+                raise ValueError(f"{quantidade=} deve ser um inteiro")
+
+            if quantidade < 0:
+                raise ValueError(f"{self.nome_publico} não pode possuir valor negativo")
+
+            if instance.limite_itens and item in instance.limite_itens and quantidade > instance.limite_itens[item]:
+                raise ValueError(f"Quantidade de {item!r} ultrapassa o limite do pedido ({instance.limite_itens[item]})")
+    
+        instance.__dict__[self.nome] = dict(valor)
 
 class Bandeja:
-    quantidade = QuantidadeValida(10)
-    def __init__(self):
+    itens = QuantidadeValida()
+    def __init__(self, limite_itens=None):
+        self.limite_itens = limite_itens or {}
         self.itens = {}
-        self.quantidade = 0
 
     def adicionar(self, item):
-        self.itens[item] = self.itens.get(item, 0) + 1
-        self.quantidade += 1
+        novo = dict(self.itens)
+        novo[item] = novo.get(item, 0) + 1
+        self.itens = novo
 
     def remover(self, item):
         if item in self.itens:
-            self.itens[item] -= 1
-            self.quantidade -= 1
-            if self.itens[item] <= 0:
-                del self.itens[item]
+            novo = dict(self.itens)
+            novo[item] -= 1
+            if novo[item] == 0:
+                del novo[item]
+            self.itens = novo
 
     def __len__(self):
-        return self.quantidade
+        return sum(self.itens.values()) 
+
+    @property
+    def limite(self):
+        return sum(self.limite_itens.values()) if self.limite_itens else 0
+
 
 class RoboColetor(Robo):
-    def __init__(self, observadores = None, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, nome, observadores = None, **kwargs):
+        super().__init__(nome, **kwargs)
         if observadores is not None:
             for observador in observadores:
                 self.adicionar_observador(observador)

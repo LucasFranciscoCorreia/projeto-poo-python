@@ -8,14 +8,17 @@
 # RegistroAuditoria(Observador) loga todo evento (coleta, bandeja pronta,
 # pedido rejeitado), pensando em trilha de auditoria, não só depuração.
 
+from celular_robo.modos import ModoColetando
+from celular_robo.modos import ModoAguardandoVerificacao
 from datetime import datetime
 
-from src.celular_robo.observadores_base import Observador
+from celular_robo.observadores_base import Observador
 
 class EquipeDeTestes(Observador):
     def __init__(self) -> None:
         super().__init__()
         self.notificacoes = []
+        self.ultimo_status = None
 
     def atualizar(self, evento, **kwargs):
         if evento == "bandeja_pronta":
@@ -24,9 +27,13 @@ class EquipeDeTestes(Observador):
             )
 
     def aprovar(self, robo):
+        self.ultimo_status = "aprovado"
+        if hasattr(robo, "bandeja"):
+            robo.bandeja.itens = {}
         robo.notificar("lote_aprovado", status="aprovado")
 
     def rejeitar(self, robo):
+        self.ultimo_status = "rejeitado"
         robo.notificar("lote_rejeitado", status="rejeitado")
 
 
@@ -49,4 +56,16 @@ class RegistroAuditoria(Observador):
 
     @property
     def registros(self):
-        return dict(self._registros)
+        registros = []
+        for data in self._registros:
+            registros.append(dict(data))
+        return registros
+
+class MonitorBandeja(Observador):
+    def atualizar(self, evento, **kwargs):
+        if evento == "bandeja_pronta":
+            robo = kwargs["robo"]
+            robo.modo = ModoAguardandoVerificacao()
+        elif evento in ("lote_aprovado", "lote_rejeitado"):
+            robo = kwargs["robo"]
+            robo.modo = ModoColetando()
