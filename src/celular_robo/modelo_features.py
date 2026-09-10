@@ -4,3 +4,42 @@
 # registros de Seção 2.2, não digitados à mão), REQUER/EXCLUI (4 dimensões: tipo,
 # estratégia, área, urgência) e validar_configuracao levantando
 # ConfiguracaoInvalida antes de qualquer robô ser instanciado.
+
+from celular_robo.excecoes import ConfiguracaoInvalida
+from celular_robo.estrategias import RotaColeta
+from celular_robo.robo_base import Robo
+from celular_robo.robo import RoboColetor
+
+AREAS = {
+    "centro_padrao": set(),
+    "area_quarentena": {(1, 1), (1, 2)}
+}
+
+TIPOS_VALIDOS = set(Robo._registro)
+ESTRATEGIAS_VALIDAS = set(RotaColeta._registro)
+AREAS_VALIDAS = set(AREAS.keys())
+
+EXCLUI = {
+    "area_quarentena": {"direta", "RotaDireta"},
+    "urgente": {"fragil"}
+}
+
+REQUER = {
+    "fragil": {"dupla_conferencia", "RotaComDuplaConferencia"},
+    "urgente": {"direta", "RotaDireta"}
+}
+
+def validar_configuracao(tipo_nome, estrategia_nome, area_nome):
+    if tipo_nome not in TIPOS_VALIDOS:
+        raise ConfiguracaoInvalida(f"Tipo de robô inválido: {tipo_nome!r}. Válidos: {TIPOS_VALIDOS}")
+    
+    if estrategia_nome not in ESTRATEGIAS_VALIDAS:
+        raise ConfiguracaoInvalida(f"Estratégia inválida: {estrategia_nome!r}. Válidas: {ESTRATEGIAS_VALIDAS}")
+    
+    if area_nome not in AREAS_VALIDAS:
+        raise ConfiguracaoInvalida(f"Área inválida: {area_nome!r}. Válidas: {AREAS_VALIDAS}")
+    
+    if area_nome in EXCLUI and estrategia_nome in EXCLUI[area_nome]:
+        raise ConfiguracaoInvalida(f"{area_nome=} exclui {estrategia_nome=}")
+    
+    return True
