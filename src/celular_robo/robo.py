@@ -13,7 +13,8 @@
 #   negativa nem passa do pedido.
 # - __str__/__repr__ (robô) e __len__ (bandeja — quantos itens já coletados).
 
-from celular_robo.modos import ModoColetando
+from celular_robo.excecoes import ErroColeta
+from celular_robo.modos import ModoAguardandoVerificacao, ModoColetando
 from celular_robo.robo_base import Robo
 
 class QuantidadeValida:
@@ -78,7 +79,24 @@ class RoboColetor(Robo):
                 self.adicionar_observador(observador)
         self.bandeja = Bandeja()
 
+    def definir_pedido(self, pedido_comandos):
+        limites = {}
+        for cmd in pedido_comandos:
+            limites[cmd.codinome] = limites.get(cmd.codinome, 0) + cmd.quantidade
+        self.bandeja.limite_itens = limites
+
+    @property
+    def pedido_completo(self) -> bool:
+        if not self.bandeja.limite_itens:
+            return False
+        return all(
+            self.bandeja.itens.get(item, 0) >= limite
+            for item, limite in self.bandeja.limite_itens.items()
+        )
+
     def coletar(self, item):
+        if isinstance(self.modo, ModoAguardandoVerificacao):
+            raise ErroColeta(f"Robô '{self.nome}' está em ModoAguardandoVerificacao e recusa nova coleta.")
         self.bandeja.adicionar(item)
         self.notificar("coleta", item=item)
 

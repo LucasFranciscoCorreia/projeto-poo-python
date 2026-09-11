@@ -1,0 +1,25 @@
+{
+    "lote": "Lote de Testes #683",
+    "itens": [
+        {
+            "codinome": "Projeto Bender",
+            "quantidade": 3,
+            "posicao": [
+                7,
+                6
+            ],
+            "fragil": false,
+            "urgente": false
+        },
+        {
+            "codinome": "Projeto Winrar",
+            "quantidade": 5,
+            "posicao": [
+                10,
+                8
+            ],
+            "fragil": false,
+            "urgente": false
+        }
+    ]
+}

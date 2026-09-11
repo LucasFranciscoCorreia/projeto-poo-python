@@ -5,6 +5,7 @@ import pytest
 
 from celular_robo.fabrica import criar_robo_configurado
 from celular_robo.comandos import ComandoColeta
+from celular_robo.excecoes import ErroColeta
 from celular_robo.modos import ModoColetando, ModoAguardandoVerificacao
 from celular_robo.observadores import EquipeDeTestes, MonitorBandeja, RegistroAuditoria
 
@@ -69,3 +70,35 @@ def test_registro_auditoria_grava_eventos():
     assert "coleta" in nomes_eventos
     assert "remocao" in nomes_eventos
     assert "bandeja_pronta" in nomes_eventos
+
+
+def test_coleta_bloqueada_em_modo_aguardando_verificacao():
+    robo = criar_robo_configurado("RoboColetor", "Coletor-Bloqueio")
+    robo.notificar("bandeja_pronta")
+    assert isinstance(robo.modo, ModoAguardandoVerificacao)
+
+    cmd = ComandoColeta("Projeto Aurora", (1, 1), 1)
+    with pytest.raises(ErroColeta, match="aguardando verificação"):
+        cmd.executar(robo)
+
+
+def test_coleta_falha_quando_bloqueada_por_obstaculo():
+    robo = criar_robo_configurado("RoboColetor", "Coletor-Obstaculo", obstaculos={(1, 0): "bancada"})
+    cmd = ComandoColeta("Projeto Aurora", (2, 0), 1)
+    
+    with pytest.raises(ErroColeta, match="não conseguiu alcançar"):
+        cmd.executar(robo)
+    
+    assert len(robo.bandeja) == 0
+
+
+def test_coleta_falha_quando_destino_fora_da_grade():
+    robo = criar_robo_configurado("RoboColetor", "Coletor-Grade")
+    cmd = ComandoColeta("Projeto Winrar", (10, 8), 5)
+    
+    with pytest.raises(ErroColeta, match="não conseguiu alcançar"):
+        cmd.executar(robo)
+    
+    assert len(robo.bandeja) == 0
+
+

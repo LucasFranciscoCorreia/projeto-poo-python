@@ -21,31 +21,25 @@ class RotaColeta(ABC):
 
     def mover(self, robo, destino=None):
         if destino:
-            self._deslocar_ate(robo, destino)
-            return True
+            return self._deslocar_ate(robo, destino)
         else:
             return robo.avancar()
     
     def _deslocar_ate(self, robo, destino):
-        """
-        Navega pela grade até a coordenada de destino (x, y),
-        girando e avançando respeitando os obstáculos.
-        """
         alvo_x, alvo_y = destino
         while (robo.x, robo.y) != (alvo_x, alvo_y):
-            # Ajuste no eixo X
             if robo.x < alvo_x:
                 robo.girar_ate(Direcao.LESTE)
             elif robo.x > alvo_x:
                 robo.girar_ate(Direcao.OESTE)
-            # Ajuste no eixo Y
             elif robo.y < alvo_y:
                 robo.girar_ate(Direcao.NORTE)
             elif robo.y > alvo_y:
                 robo.girar_ate(Direcao.SUL)
-            # Tenta avançar; se houver obstáculo, interrompe para não entrar em loop
+                
             if not robo.avancar():
-                break
+                return False
+        return True
     
     @abstractmethod
     def coletar(self, robo, item, quantidade=1):

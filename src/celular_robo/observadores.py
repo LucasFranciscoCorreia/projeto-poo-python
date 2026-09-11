@@ -48,7 +48,7 @@ class RegistroAuditoria(Observador):
             "timestamp": datetime.now(),
             "msg": kwargs
         }
-        print(log)
+        
         self._registros.append(log)
 
     def __len__(self):

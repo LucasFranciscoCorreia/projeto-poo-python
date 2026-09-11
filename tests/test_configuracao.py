@@ -52,3 +52,18 @@ def test_montar_robo_de_config():
     assert robo.nome == "Coletor-JSON"
     assert isinstance(robo.estrategia, RotaComDuplaConferencia)
     assert (robo.x, robo.y) == (0, 0)
+
+
+def test_quantidade_valida_descriptor_nao_permite_negativo_nem_ultrapassar_limite():
+    robo = criar_robo_configurado("RoboColetor", "Coletor-Descriptor")
+    robo.bandeja.limite_itens = {"Projeto Aurora": 2}
+    
+    robo.coletar("Projeto Aurora")
+    robo.coletar("Projeto Aurora")
+    assert robo.bandeja.itens["Projeto Aurora"] == 2
+
+    with pytest.raises(ValueError, match="ultrapassa o limite"):
+        robo.coletar("Projeto Aurora")
+
+    with pytest.raises(ValueError, match="não pode possuir valor negativo"):
+        robo.bandeja.itens = {"Projeto Aurora": -1}
