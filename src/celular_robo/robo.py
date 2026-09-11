@@ -13,6 +13,7 @@
 #   negativa nem passa do pedido.
 # - __str__/__repr__ (robô) e __len__ (bandeja — quantos itens já coletados).
 
+from celular_robo.modos import ModoColetando
 from celular_robo.robo_base import Robo
 
 class QuantidadeValida:
@@ -69,8 +70,9 @@ class Bandeja:
 
 
 class RoboColetor(Robo):
-    def __init__(self, nome, observadores = None, **kwargs):
-        super().__init__(nome, **kwargs)
+    def __init__(self, nome, observadores = None, modo = None, **kwargs):
+        modo = modo if modo is not None else ModoColetando()
+        super().__init__(nome, modo=modo, **kwargs)
         if observadores is not None:
             for observador in observadores:
                 self.adicionar_observador(observador)
@@ -78,11 +80,11 @@ class RoboColetor(Robo):
 
     def coletar(self, item):
         self.bandeja.adicionar(item)
-        self.notificar("coleta", item)
+        self.notificar("coleta", item=item)
 
     def remover(self, item):
         self.bandeja.remover(item)
-        self.notificar("remocao", item)
+        self.notificar("remocao", item=item)
 
     def __len__(self):
         return len(self.bandeja)
