@@ -9,34 +9,36 @@
 # bandeja, decrementa a contagem coletada).
 
 from celular_robo.comandos_base import Comando
+from celular_robo.estrategias import RotaColeta
 from celular_robo.excecoes import ErroColeta
 from celular_robo.modos import ModoAguardandoVerificacao
+from celular_robo.robo_base import Robo
 
 
 class ComandoColeta(Comando):
-    def __init__(self, codinome, posicao, quantidade, fragil=False, urgente=False):
+    def __init__(self, codinome: str, posicao: tuple[int, int], quantidade: int, fragil: bool = False, urgente: bool = False):
         super().__init__()
-        self.codinome = codinome
-        self.posicao = tuple(posicao)
-        self.quantidade = quantidade
-        self.fragil = fragil
-        self.urgente = urgente
+        self.codinome: str = codinome
+        self.posicao: tuple[int, int] = tuple(posicao)
+        self.quantidade: int = quantidade
+        self.fragil: bool = fragil
+        self.urgente: bool = urgente
 
-    def executar(self, robo):
+    def executar(self, robo: Robo) -> None:
         if isinstance(robo.modo, ModoAguardandoVerificacao):
             raise ErroColeta(
                 f"{robo.nome} está aguardando verificação da bancada e não pode iniciar nova coleta."
             )
 
-        qtd_atual = robo.bandeja.itens.get(self.codinome, 0)
-        limite = robo.bandeja.limite_itens.get(self.codinome, None)
+        qtd_atual: int = robo.bandeja.itens.get(self.codinome, 0)
+        limite: int | None = robo.bandeja.limite_itens.get(self.codinome)
         if limite is not None and qtd_atual >= limite:
             return
 
-        try:
-            chegou = robo.estrategia.mover(robo, destino=self.posicao)
-        except TypeError:
-            chegou = robo.estrategia.mover(robo)
+        if isinstance(robo.estrategia, RotaColeta):
+            chegou: bool = robo.estrategia.mover(robo, destino=self.posicao)
+        else:
+            chegou: bool = robo.estrategia.mover(robo)
 
         if not chegou or (robo.x, robo.y) != self.posicao:
             raise ErroColeta(
@@ -44,9 +46,9 @@ class ComandoColeta(Comando):
                 f"do item '{self.codinome}' (parou em ({robo.x}, {robo.y}) devido a obstáculo ou limite do laboratório)."
             )
 
-        qtd_a_coletar = self.quantidade if limite is None else min(self.quantidade, limite - qtd_atual)
+        qtd_a_coletar: int = self.quantidade if limite is None else min(self.quantidade, limite - qtd_atual)
         robo.estrategia.coletar(robo, self.codinome, qtd_a_coletar)
 
-    def desfazer(self, robo):
+    def desfazer(self, robo: Robo) -> None:
         for _ in range(self.quantidade):
             robo.remover(self.codinome)

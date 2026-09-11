@@ -7,8 +7,10 @@
 class ErroColeta(Exception):
     pass
 
+
 class ConfiguracaoInvalida(ErroColeta):
     pass
+
 
 class PedidoInvalido(ErroColeta):
     pass

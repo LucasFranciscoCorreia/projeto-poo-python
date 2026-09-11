@@ -1,7 +1,8 @@
 # RoboColetor + QuantidadeValida — enunciado, Seção 2.1.
 #
 # `Robo` (posição, __init_subclass__/_registro, avancar/girar, estrategia/modo,
-# Observer) já vem pronto em robo_base.py — não precisa reescrever, só importar:
+# Observer) já vem pronto em robo_base.py — não precisa reescrever, só
+# importar:
 #
 #   from celular_robo.robo_base import Robo, Coordenada
 #
@@ -13,12 +14,16 @@
 #   negativa nem passa do pedido.
 # - __str__/__repr__ (robô) e __len__ (bandeja — quantos itens já coletados).
 
+from celular_robo.comandos import ComandoColeta
 from celular_robo.excecoes import ErroColeta
 from celular_robo.modos import ModoAguardandoVerificacao, ModoColetando
+from celular_robo.modos_base import ModoOperacao
+from celular_robo.observadores_base import Observador
 from celular_robo.robo_base import Robo
 
+
 class QuantidadeValida:
-    def __set_name__(self, owner, name):
+    def __set_name__(self, owner, name: str) -> None:
         self.nome_publico = name
         self.nome = "_" + name
 
@@ -27,13 +32,13 @@ class QuantidadeValida:
             return self
         return instance.__dict__.setdefault(self.nome, {})
 
-    def __set__(self, instance, valor):
+    def __set__(self, instance, valor: dict[str, int]) -> None:
         if not isinstance(valor, dict):
-            raise ValueError(f"{self.nome_publico} deve ser um dicionário, recebi {type(valor).__name__}")
+            raise TypeError(f"{self.nome_publico} deve ser um dicionário, recebi {type(valor).__name__}")
         
         for item, quantidade in valor.items():
             if not isinstance(quantidade, int):
-                raise ValueError(f"{quantidade=} deve ser um inteiro")
+                raise TypeError(f"{quantidade=} deve ser um inteiro")
 
             if quantidade < 0:
                 raise ValueError(f"{self.nome_publico} não pode possuir valor negativo")
@@ -43,18 +48,20 @@ class QuantidadeValida:
     
         instance.__dict__[self.nome] = dict(valor)
 
+
 class Bandeja:
     itens = QuantidadeValida()
-    def __init__(self, limite_itens=None):
-        self.limite_itens = limite_itens or {}
-        self.itens = {}
 
-    def adicionar(self, item):
+    def __init__(self, limite_itens: dict[str, int] | None = None):
+        self.limite_itens = limite_itens or {}
+        self.itens: dict[str, int] = {}
+
+    def adicionar(self, item: str) -> None:
         novo = dict(self.itens)
         novo[item] = novo.get(item, 0) + 1
         self.itens = novo
 
-    def remover(self, item):
+    def remover(self, item: str):
         if item in self.itens:
             novo = dict(self.itens)
             novo[item] -= 1
@@ -62,24 +69,24 @@ class Bandeja:
                 del novo[item]
             self.itens = novo
 
-    def __len__(self):
-        return sum(self.itens.values()) 
+    def __len__(self) -> int:
+        return sum(self.itens.values())
 
     @property
-    def limite(self):
+    def limite(self) -> int:
         return sum(self.limite_itens.values()) if self.limite_itens else 0
 
 
 class RoboColetor(Robo):
-    def __init__(self, nome, observadores = None, modo = None, **kwargs):
+    def __init__(self, nome: str, observadores: list[Observador] | None = None, modo: ModoOperacao | None = None, **kwargs):
         modo = modo if modo is not None else ModoColetando()
         super().__init__(nome, modo=modo, **kwargs)
         if observadores is not None:
             for observador in observadores:
                 self.adicionar_observador(observador)
-        self.bandeja = Bandeja()
+        self.bandeja: Bandeja = Bandeja()
 
-    def definir_pedido(self, pedido_comandos):
+    def definir_pedido(self, pedido_comandos: list[ComandoColeta]) -> None:
         limites = {}
         for cmd in pedido_comandos:
             limites[cmd.codinome] = limites.get(cmd.codinome, 0) + cmd.quantidade
@@ -94,18 +101,18 @@ class RoboColetor(Robo):
             for item, limite in self.bandeja.limite_itens.items()
         )
 
-    def coletar(self, item):
+    def coletar(self, item: str) -> None:
         if isinstance(self.modo, ModoAguardandoVerificacao):
             raise ErroColeta(f"Robô '{self.nome}' está em ModoAguardandoVerificacao e recusa nova coleta.")
         self.bandeja.adicionar(item)
         self.notificar("coleta", item=item)
 
-    def remover(self, item):
+    def remover(self, item: str) -> None:
         self.bandeja.remover(item)
         self.notificar("remocao", item=item)
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.bandeja)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"RoboColetor({super().__repr__()})"

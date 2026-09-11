@@ -5,32 +5,37 @@
 # aprovar/rejeitar retirada da equipe de testes.
 
 import json
+from datetime import datetime
 
-from celular_robo.excecoes import ErroColeta, ConfiguracaoInvalida, PedidoInvalido
+from celular_robo.comandos import ComandoColeta
+from celular_robo.excecoes import ConfiguracaoInvalida, ErroColeta, PedidoInvalido
 from celular_robo.modos import ModoAguardandoVerificacao
-from celular_robo.observadores import EquipeDeTestes, MonitorBandeja, RegistroAuditoria
-from celular_robo.persistencia import montar_robo_de_config, montar_pedido_de_json
+from celular_robo.observadores import (
+    EquipeDeTestes,
+    MonitorBandeja,
+    Observador,
+    RegistroAuditoria,
+)
+from celular_robo.persistencia import montar_pedido_de_json, montar_robo_de_config
+from celular_robo.robo_base import Robo
 
 
 class CLIApp:
     def __init__(self):
-        self.robo = None
-        self.equipe = EquipeDeTestes()
-        self.monitor = MonitorBandeja()
-        self.auditoria = RegistroAuditoria()
-        self.pedidos_comandos = []
-        self.caminho_pedido_atual = None
+        self.robo: Robo = None
+        self.equipe: Observador = EquipeDeTestes()
+        self.monitor: Observador = MonitorBandeja()
+        self.auditoria: Observador = RegistroAuditoria()
+        self.pedidos_comandos: list[ComandoColeta] = []
+        self.caminho_pedido_atual: str | None = None
 
-    def carregar_robo(self):
-        padrao = "dados/config_robo_exemplo.json"
-        caminho = input(f"Caminho da config do robô [{padrao}]: ").strip() or padrao
+    def carregar_robo(self) -> None:
+        padrao: str = "dados/config_robo_exemplo.json"
+        caminho: str = input(f"Caminho da config do robô [{padrao}]: ").strip() or padrao
         try:
             with open(caminho, "r", encoding="utf-8") as f:
-                config = json.load(f)
-            self.robo = montar_robo_de_config(
-                config,
-                observadores=[self.equipe, self.monitor, self.auditoria]
-            )
+                config: dict[str, str] = json.load(f)
+            self.robo: Robo = montar_robo_de_config(config, observadores=[self.equipe, self.monitor, self.auditoria])
             if self.pedidos_comandos:
                 self.robo.definir_pedido(self.pedidos_comandos)
 
@@ -44,13 +49,13 @@ class CLIApp:
         except ConfiguracaoInvalida as e:
             print(f"\n[ERRO DE CONFIGURAÇÃO] {e}")
 
-    def carregar_pedido(self):
-        padrao = "dados/pedido_coleta_exemplo.json"
-        caminho = input(f"Caminho do arquivo de pedido [{padrao}]: ").strip() or padrao
+    def carregar_pedido(self) -> None:
+        padrao: str = "dados/pedido_coleta_exemplo.json"
+        caminho: str = input(f"Caminho do arquivo de pedido [{padrao}]: ").strip() or padrao
         try:
-            comandos = montar_pedido_de_json(caminho)
-            self.pedidos_comandos = comandos
-            self.caminho_pedido_atual = caminho
+            comandos: list[ComandoColeta] = montar_pedido_de_json(caminho)
+            self.pedidos_comandos: list[ComandoColeta] = comandos
+            self.caminho_pedido_atual: str = caminho
 
             if self.robo is not None:
                 self.robo.definir_pedido(self.pedidos_comandos)
@@ -60,18 +65,18 @@ class CLIApp:
         except PedidoInvalido as e:
             print(f"\n[ERRO DE PEDIDO] {e}")
 
-    def listar_pedido(self):
+    def listar_pedido(self) -> None:
         if not self.pedidos_comandos:
             print("\nNenhum pedido carregado no momento.")
             return
         print(f"\n--- Itens do Pedido ({self.caminho_pedido_atual}) ---")
         for i, cmd in enumerate(self.pedidos_comandos, 1):
-            flag_fragil = " [FRÁGIL]" if cmd.fragil else ""
-            flag_urgente = " [URGENTE]" if cmd.urgente else ""
+            flag_fragil: str = " [FRÁGIL]" if cmd.fragil else ""
+            flag_urgente: str = " [URGENTE]" if cmd.urgente else ""
             print(f"  {i}. {cmd.codinome} | Quantidade: {cmd.quantidade} | Posição: {cmd.posicao}{flag_fragil}{flag_urgente}")
         print("-------------------------------------------------")
 
-    def processar_pedido(self):
+    def processar_pedido(self) -> None:
         if self.robo is None:
             print("\n[AVISO] Configure um robô primeiro (Opção 1).")
             return
@@ -84,7 +89,7 @@ class CLIApp:
             return
 
         if self.robo.pedido_completo:
-            print(f"\n[AVISO] Todos os itens deste pedido já foram coletados e estão na bandeja.")
+            print("\n[AVISO] Todos os itens deste pedido já foram coletados e estão na bandeja.")
             print("Conforme a Seção 2.3 do enunciado, os itens já coletados não precisam ser reprocessados.")
             return
 
@@ -93,14 +98,14 @@ class CLIApp:
             for cmd in self.pedidos_comandos:
                 print(f" -> Navegando até {cmd.posicao} para coletar {cmd.quantidade}x '{cmd.codinome}'...")
                 cmd.executar(self.robo)
-            
+
             self.robo.notificar("bandeja_pronta")
             print("\n[SUCESSO] Todos os itens foram coletados!")
             print(f"O robô entrou em '{self.robo.modo.__class__.__name__}' aguardando liberação da bancada.")
         except (ErroColeta, ValueError) as e:
             print(f"\n[FALHA NA COLETA] {e}")
 
-    def ver_estado_bandeja(self):
+    def ver_estado_bandeja(self) -> None:
         if self.robo is None:
             print("\n[AVISO] Nenhum robô configurado no momento.")
             return
@@ -117,7 +122,7 @@ class CLIApp:
             print("    (Bandeja vazia)")
         print("----------------------------------------")
 
-    def aprovar_retirada(self):
+    def aprovar_retirada(self) -> None:
         if self.robo is None:
             print("\n[AVISO] Nenhum robô configurado.")
             return
@@ -125,7 +130,7 @@ class CLIApp:
         print("\n[EQUIPE DE TESTES] Lote APROVADO!")
         print(f"A bandeja foi esvaziada e o robô retornou para '{self.robo.modo.__class__.__name__}'.")
 
-    def rejeitar_retirada(self):
+    def rejeitar_retirada(self) -> None:
         if self.robo is None:
             print("\n[AVISO] Nenhum robô configurado.")
             return
@@ -133,8 +138,8 @@ class CLIApp:
         print("\n[EQUIPE DE TESTES] Lote REJEITADO!")
         print(f"Os itens permanecem na bandeja para averiguação. Robô em '{self.robo.modo.__class__.__name__}'.")
 
-    def exibir_auditoria(self):
-        registros = self.auditoria.registros
+    def exibir_auditoria(self) -> None:
+        registros: list[dict[str, str | datetime]] = self.auditoria.registros
         if not registros:
             print("\nTrilha de auditoria vazia.")
             return
@@ -146,7 +151,7 @@ class CLIApp:
             print(f"  [{ts}] Evento: {evento:<18} | Detalhes: {msg}")
         print("-----------------------------------------------------")
 
-    def executar(self):
+    def executar(self) -> None:
         while True:
             print("\n=========================================")
             print("   Laboratório de Coleta de Celulares")
@@ -186,7 +191,7 @@ class CLIApp:
                 print("\nOpção inválida, tente novamente.")
 
 
-def main():
+def main() -> None:
     app = CLIApp()
     app.executar()
 

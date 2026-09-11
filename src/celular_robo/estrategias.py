@@ -7,25 +7,30 @@
 # __init_subclass__ registrando cada rota, ver Seção 2.2 (metaprogramação
 # aplicada a uma segunda hierarquia).
 
-from celular_robo.robo_base import Direcao
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
+from typing import ClassVar
+
+from celular_robo.robo_base import Direcao, Robo
 
 
 class RotaColeta(ABC):
-    _registro = {}
-    def __init_subclass__(cls, identificador=None, **kwargs) -> None:
+    _registro: ClassVar[dict[str, type[RotaColeta]]] = {}
+
+    def __init_subclass__(cls, identificador: str | None = None, **kwargs) -> None:
         super().__init_subclass__(**kwargs)
-        chave = identificador or cls.__name__
-        cls.identificador = chave
+        chave: str = identificador or cls.__name__
+        cls.identificador: str = chave
         RotaColeta._registro[chave] = cls
 
-    def mover(self, robo, destino=None):
+    def mover(self, robo: Robo, destino: tuple[int, int] | None = None) -> bool:
         if destino:
             return self._deslocar_ate(robo, destino)
         else:
             return robo.avancar()
-    
-    def _deslocar_ate(self, robo, destino):
+
+    def _deslocar_ate(self, robo: Robo, destino: tuple[int, int]) -> bool:
         alvo_x, alvo_y = destino
         while (robo.x, robo.y) != (alvo_x, alvo_y):
             if robo.x < alvo_x:
@@ -36,23 +41,24 @@ class RotaColeta(ABC):
                 robo.girar_ate(Direcao.NORTE)
             elif robo.y > alvo_y:
                 robo.girar_ate(Direcao.SUL)
-                
+
             if not robo.avancar():
                 return False
         return True
-    
+
     @abstractmethod
-    def coletar(self, robo, item, quantidade=1):
+    def coletar(self, robo: Robo, item: str, quantidade: int = 1):
         ...
 
+
 class RotaDireta(RotaColeta, identificador="direta"):
-    def coletar(self, robo, item, quantidade=1):
+    def coletar(self, robo: Robo, item: str, quantidade: int = 1):
         for _ in range(quantidade):
             robo.coletar(item)
-        
+
 
 class RotaComDuplaConferencia(RotaColeta, identificador="dupla_conferencia"):
-    def coletar(self, robo, item, quantidade=1):
+    def coletar(self, robo: Robo, item: str, quantidade: int = 1):
         for _ in range(quantidade):
             robo.notificar("dupla_conferencia", item=item)
             robo.coletar(item)

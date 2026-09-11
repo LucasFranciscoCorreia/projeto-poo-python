@@ -9,13 +9,15 @@
 # bandeja completa.
 
 from celular_robo.modos_base import ModoOperacao
+from celular_robo.robo_base import Robo
+
 
 class ModoColetando(ModoOperacao):
-    def mover(self, robo):
+    def mover(self, robo: Robo):
         return robo.estrategia.mover(robo)
 
+
 class ModoAguardandoVerificacao(ModoOperacao):
-    def mover(self, robo):
+    def mover(self, robo: Robo):
         print(f"{robo.nome} está aguardando verificação da equipe de testes. Movimentação bloqueada.")
         return False
-    
