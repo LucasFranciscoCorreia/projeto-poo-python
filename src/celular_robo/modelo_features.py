@@ -30,7 +30,22 @@ REQUER: dict[str, set[str]] = {
 }
 
 
-def validar_configuracao(tipo_nome: str, estrategia_nome: str, area_nome: str):
+def validar_configuracao(tipo_nome: str, estrategia_nome: str, area_nome: str) -> bool:
+    """
+    Valida se a combinação de tipo, estratégia e área respeita as restrições da LPS.
+
+    Verifica se os componentes informados estão cadastrados no registro de tipos válidos e se não violam nenhuma regra de exclusão mútua (por exemplo, uso de rota direta na área de quarentena).
+    Args:
+        tipo_nome: Nome do tipo de robô a ser instanciado (deve constar em `TIPOS_VALIDOS`).
+        estrategia_nome: Identificador da estratégia de navegação (deve constar em `ESTRATEGIAS_VALIDAS`).
+        area_nome: Nome da área do laboratório (deve constar em `AREAS_VALIDAS`).
+
+    Returns:
+        True se a configuração for consistente com todas as regras do modelo.
+
+    Raises:
+        ConfiguracaoInvalida: Se o tipo de robô, a estratégia ou a área não forem válidos, ou se a área selecionada excluir mutuamente a estratégia informada.
+    """
     if tipo_nome not in TIPOS_VALIDOS:
         raise ConfiguracaoInvalida(f"Tipo de robô inválido: {tipo_nome!r}. Válidos: {TIPOS_VALIDOS}")
 

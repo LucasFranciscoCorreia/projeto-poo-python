@@ -21,6 +21,9 @@ from celular_robo.robo_base import Robo
 
 
 class CLIApp:
+    """
+    Interface interativa no terminal para testar o robô e os pedidos.
+    """
     def __init__(self):
         self.robo: Robo = None
         self.equipe: Observador = EquipeDeTestes()
@@ -30,6 +33,9 @@ class CLIApp:
         self.caminho_pedido_atual: str | None = None
 
     def carregar_robo(self) -> None:
+        """
+        Carrega a configuração do robô a partir do arquivo JSON.
+        """
         padrao: str = "dados/config_robo_exemplo.json"
         caminho: str = input(f"Caminho da config do robô [{padrao}]: ").strip() or padrao
         try:
@@ -50,6 +56,9 @@ class CLIApp:
             print(f"\n[ERRO DE CONFIGURAÇÃO] {e}")
 
     def carregar_pedido(self) -> None:
+        """
+        Carrega um pedido a partir de um arquivo JSON e carrega os comandos de coleta.
+        """
         padrao: str = "dados/pedido_coleta_exemplo.json"
         caminho: str = input(f"Caminho do arquivo de pedido [{padrao}]: ").strip() or padrao
         try:
@@ -66,6 +75,9 @@ class CLIApp:
             print(f"\n[ERRO DE PEDIDO] {e}")
 
     def listar_pedido(self) -> None:
+        """
+        Exibe no terminal a listagem de todos os itens e posições do pedido.
+        """
         if not self.pedidos_comandos:
             print("\nNenhum pedido carregado no momento.")
             return
@@ -77,6 +89,9 @@ class CLIApp:
         print("-------------------------------------------------")
 
     def processar_pedido(self) -> None:
+        """
+        Executa sequencialmente os comandos de coleta com o robô ativo.
+        """
         if self.robo is None:
             print("\n[AVISO] Configure um robô primeiro (Opção 1).")
             return
@@ -106,6 +121,9 @@ class CLIApp:
             print(f"\n[FALHA NA COLETA] {e}")
 
     def ver_estado_bandeja(self) -> None:
+        """
+        Exibe a telemetria do robô, bateria, coordenadas e itens na bandeja.
+        """
         if self.robo is None:
             print("\n[AVISO] Nenhum robô configurado no momento.")
             return
@@ -123,6 +141,9 @@ class CLIApp:
         print("----------------------------------------")
 
     def aprovar_retirada(self) -> None:
+        """
+        Simula a aprovação do lote pela equipe de testes, esvaziando a bandeja.
+        """
         if self.robo is None:
             print("\n[AVISO] Nenhum robô configurado.")
             return
@@ -131,6 +152,9 @@ class CLIApp:
         print(f"A bandeja foi esvaziada e o robô retornou para '{self.robo.modo.__class__.__name__}'.")
 
     def rejeitar_retirada(self) -> None:
+        """
+        Simula a rejeição do lote pela equipe de testes, mantendo os itens na bandeja.
+        """
         if self.robo is None:
             print("\n[AVISO] Nenhum robô configurado.")
             return
@@ -139,6 +163,9 @@ class CLIApp:
         print(f"Os itens permanecem na bandeja para averiguação. Robô em '{self.robo.modo.__class__.__name__}'.")
 
     def exibir_auditoria(self) -> None:
+        """
+        Imprime a trilha de auditoria com timestamp e eventos registrados.
+        """
         registros: list[dict[str, str | datetime]] = self.auditoria.registros
         if not registros:
             print("\nTrilha de auditoria vazia.")
@@ -152,6 +179,9 @@ class CLIApp:
         print("-----------------------------------------------------")
 
     def executar(self) -> None:
+        """
+        Executa o laço principal do menu interativo no terminal.
+        """
         while True:
             print("\n=========================================")
             print("   Laboratório de Coleta de Celulares")

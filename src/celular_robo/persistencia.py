@@ -14,6 +14,21 @@ from celular_robo.robo_base import Robo
 
 
 def montar_robo_de_config(config: dict[str, str], **kwargs) -> Robo:
+    """
+    Instancia e configura um robô a partir de um dicionário de parâmetros.
+    
+    Extrai tipo, nome, estratégia de rota e área do dicionário de configuração (aplicando valores padrão quando omitidos) e delega a criação para a fábrica.
+    
+    Args:
+        config: Dicionário contendo os parâmetros de configuração ('tipo_nome', 'nome', 'estrategia_nome', 'area_nome').
+        **kwargs: Parâmetros adicionais repassados para a inicialização do robô.
+    
+    Returns:
+        Instância do robô devidamente configurada.
+    
+    Raises:
+        ConfiguracaoInvalida: Se a combinação de tipo, estratégia ou área violar as regras da Linha de Produtos de Software (LPS).
+    """
     tipo_nome = config.get("tipo_nome", "RoboColetor")
     nome = config.get("nome", "Coletor-1")
     estrategia_nome = config.get("estrategia_nome", "direta")
@@ -23,6 +38,15 @@ def montar_robo_de_config(config: dict[str, str], **kwargs) -> Robo:
 
 
 def montar_pedido_de_json(caminho: str) -> list[ComandoColeta]:
+    """
+    Lê o JSON do pedido, valida regras de negócio (lote não vazio, itens válidos e sem misturar frágeis e urgentes) e retorna a lista de comandos de coleta.
+    
+    Args:
+        caminho: Caminho do arquivo JSON do pedido.
+    
+    Raises:
+        PedidoInvalido: Se o arquivo for inválido ou violar as regras de negócio.
+    """
     try:
         with open(caminho, 'r', encoding='utf-8') as file:
             pedido = json.load(file)
