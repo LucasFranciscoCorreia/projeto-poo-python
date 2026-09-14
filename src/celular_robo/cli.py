@@ -11,6 +11,7 @@ from celular_robo.comandos import ComandoColeta
 from celular_robo.excecoes import ConfiguracaoInvalida, ErroColeta, PedidoInvalido
 from celular_robo.modos import ModoAguardandoVerificacao
 from celular_robo.observadores import (
+    DespachanteTransporte,
     EquipeDeTestes,
     MonitorBandeja,
     Observador,
@@ -29,6 +30,7 @@ class CLIApp:
         self.equipe: Observador = EquipeDeTestes()
         self.monitor: Observador = MonitorBandeja()
         self.auditoria: Observador = RegistroAuditoria()
+        self.despachante: Observador = DespachanteTransporte()
         self.pedidos_comandos: list[ComandoColeta] = []
         self.caminho_pedido_atual: str | None = None
 
@@ -41,7 +43,7 @@ class CLIApp:
         try:
             with open(caminho, "r", encoding="utf-8") as f:
                 config: dict[str, str] = json.load(f)
-            self.robo: Robo = montar_robo_de_config(config, observadores=[self.equipe, self.monitor, self.auditoria])
+            self.robo: Robo = montar_robo_de_config(config, observadores=[self.equipe, self.monitor, self.auditoria, self.despachante])
             if self.pedidos_comandos:
                 self.robo.definir_pedido(self.pedidos_comandos)
 
@@ -150,6 +152,9 @@ class CLIApp:
         self.equipe.aprovar(self.robo)
         print("\n[EQUIPE DE TESTES] Lote APROVADO!")
         print(f"A bandeja foi esvaziada e o robô retornou para '{self.robo.modo.__class__.__name__}'.")
+        if getattr(self.despachante, "ultimo_transporte_sucesso", False) and getattr(self.despachante, "transportador", None):
+            t = self.despachante.transportador
+            print(f"[TRANSPORTE] {t.nome} assumiu o lote e entregou no ponto de retirada ({t.x}, {t.y}) com sucesso!")
 
     def rejeitar_retirada(self) -> None:
         """

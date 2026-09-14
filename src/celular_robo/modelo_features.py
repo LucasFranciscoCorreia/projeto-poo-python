@@ -7,7 +7,7 @@
 
 from celular_robo.estrategias import RotaColeta
 from celular_robo.excecoes import ConfiguracaoInvalida
-from celular_robo.robo import RoboColetor
+from celular_robo.robo import RoboColetor, RoboTransportador
 from celular_robo.robo_base import Robo
 
 AREAS: dict[str, set[tuple[int, int]]] = {
@@ -21,7 +21,8 @@ AREAS_VALIDAS: set[str] = set(AREAS.keys())
 
 EXCLUI: dict[str, set[str]] = {
     "area_quarentena": {"direta", "RotaDireta"},
-    "urgente": {"fragil"}
+    "urgente": {"fragil"},
+    "RoboTransportador": {"area_quarentena"},
 }
 
 REQUER: dict[str, set[str]] = {
@@ -34,7 +35,7 @@ def validar_configuracao(tipo_nome: str, estrategia_nome: str, area_nome: str) -
     """
     Valida se a combinação de tipo, estratégia e área respeita as restrições da LPS.
 
-    Verifica se os componentes informados estão cadastrados no registro de tipos válidos e se não violam nenhuma regra de exclusão mútua (por exemplo, uso de rota direta na área de quarentena).
+    Verifica se os componentes informados estão cadastrados no registro de tipos válidos e se não violam nenhuma regra de exclusão mútua (por exemplo, uso de rota direta na área de quarentena ou robô transportador na área de quarentena).
     Args:
         tipo_nome: Nome do tipo de robô a ser instanciado (deve constar em `TIPOS_VALIDOS`).
         estrategia_nome: Identificador da estratégia de navegação (deve constar em `ESTRATEGIAS_VALIDAS`).
@@ -57,5 +58,8 @@ def validar_configuracao(tipo_nome: str, estrategia_nome: str, area_nome: str) -
 
     if area_nome in EXCLUI and estrategia_nome in EXCLUI[area_nome]:
         raise ConfiguracaoInvalida(f"{area_nome=} exclui {estrategia_nome=}")
+
+    if tipo_nome in EXCLUI and area_nome in EXCLUI[tipo_nome]:
+        raise ConfiguracaoInvalida(f"{tipo_nome=} exclui {area_nome=}")
 
     return True

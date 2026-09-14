@@ -192,3 +192,56 @@ class RoboColetor(Robo):
 
     def __repr__(self) -> str:
         return f"RoboColetor({super().__repr__()})"
+
+
+class RoboTransportador(Robo):
+    """
+    Robô responsável por transportar lotes de itens aprovados até o ponto de retirada.
+    
+    Attributes:
+        carga: Dicionário contendo os itens atualmente transportados.
+        ponto_retirada: Coordenada (x, y) de entrega da carga no laboratório.
+    """
+
+    def __init__(self, nome: str, ponto_retirada: tuple[int, int] = (9, 9), observadores: list[Observador] | None = None, **kwargs) -> None:
+        """
+        Inicializa o robô transportador com seu ponto de retirada e observadores.
+        """
+        super().__init__(nome, **kwargs)
+        self.ponto_retirada: tuple[int, int] = tuple(ponto_retirada)
+        self.carga: dict[str, int] = {}
+        if observadores is not None:
+            for obs in observadores:
+                self.adicionar_observador(obs)
+
+    def carregar(self, itens: dict[str, int]) -> None:
+        """
+        Recebe os itens aprovados para transporte.
+        """
+        self.carga = dict(itens)
+        self.notificar("carga_recebida", carga=dict(self.carga))
+
+    def transportar_ate_retirada(self) -> bool:
+        """
+        Move o robô até o ponto de retirada e descarrega os itens.
+        """
+        from celular_robo.estrategias import RotaColeta
+
+        if isinstance(self.estrategia, RotaColeta):
+            chegou = self.estrategia.mover(self, destino=self.ponto_retirada)
+        else:
+            chegou = self.estrategia.mover(self)
+
+        if chegou and (self.x, self.y) == self.ponto_retirada:
+            carga_entregue = dict(self.carga)
+            self.carga.clear()
+            self.notificar("transporte_concluido", carga=carga_entregue, destino=self.ponto_retirada)
+            return True
+        return False
+
+    def __len__(self) -> int:
+        return sum(self.carga.values())
+
+    def __repr__(self) -> str:
+        return f"RoboTransportador({super().__repr__()})"
+

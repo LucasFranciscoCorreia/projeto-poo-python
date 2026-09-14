@@ -13,6 +13,7 @@ from datetime import datetime, timezone
 from celular_robo.modos import ModoAguardandoVerificacao, ModoColetando
 from celular_robo.observadores_base import Observador
 from celular_robo.robo_base import Robo
+from celular_robo.fabrica import criar_robo_configurado
 
 
 class EquipeDeTestes(Observador):
@@ -50,10 +51,13 @@ class EquipeDeTestes(Observador):
         Args:
             robo: Instância do robô cujo lote foi aprovado.
         """
-        self.ultimo_status: str = "aprovado"
+        self.ultimo_status = "aprovado"
+        itens_aprovados = {}
         if hasattr(robo, "bandeja"):
+            itens_aprovados = dict(robo.bandeja.itens)
             robo.bandeja.itens = {}
-        robo.notificar("lote_aprovado", status="aprovado")
+        robo.notificar("lote_aprovado", status="aprovado", itens=itens_aprovados)
+
 
     def rejeitar(self, robo: Robo) -> None:
         """
@@ -131,3 +135,38 @@ class MonitorBandeja(Observador):
         elif evento in ("lote_aprovado", "lote_rejeitado"):
             robo = kwargs["robo"]
             robo.modo = ModoColetando()
+
+
+class DespachanteTransporte(Observador):
+    """
+    Observador responsável pelo handoff do lote aprovado para o RoboTransportador.
+    
+    Attributes:
+        transportador: Instância de RoboTransportador responsável pelo transporte.
+        ultimo_transporte_sucesso: Indica se a última operação de entrega foi concluída.
+    """
+
+    def __init__(self, transportador: Robo | None = None) -> None:
+        """
+        Inicializa o despachante com um transportador opcional.
+        """
+        super().__init__()
+        
+        if transportador is None:
+            self.transportador: Robo = criar_robo_configurado("RoboTransportador", "Transportador-Auto")
+        else:
+            self.transportador: Robo = transportador
+
+        self.ultimo_transporte_sucesso: bool = False
+
+    def atualizar(self, evento: str, **kwargs) -> None:
+        """
+        Recebe notificações de lote aprovado e despacha a carga para o ponto de retirada.
+        """
+        if evento == "lote_aprovado":
+            itens = kwargs.get("itens", {})
+
+            if hasattr(self.transportador, "carregar") and hasattr(self.transportador, "transportar_ate_retirada"):
+                self.transportador.carregar(itens)
+                self.ultimo_transporte_sucesso = self.transportador.transportar_ate_retirada()
+
